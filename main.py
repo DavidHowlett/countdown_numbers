@@ -13,7 +13,9 @@ They are also used to avoid recreating duplicate entries for ways to generating 
 """
 import copy
 import itertools
+import time
 
+start_time = time.perf_counter()
 target = 673
 
 initial_numbers = [1, 10, 100, 1000, 10000, 100000, 1000000]
@@ -55,7 +57,7 @@ for _ in range(len(initial_numbers) - 1):
             place_to_put_new_combos = main_data_structure[new_used_numbers]
             for total1, formula_fragment1 in fragment_set1:
                 for total2, formula_fragment2 in fragment_set2:
-                    # subtract
+                    # subtract --------------------------
                     new_total = total1 - total2
                     new_thing = (
                         new_total,
@@ -63,37 +65,40 @@ for _ in range(len(initial_numbers) - 1):
                     )
                     if new_total == target:
                         print(new_thing)
+                        print(f'puzzle finished in {(time.perf_counter() - start_time)*1000} ms')
                         exit()
                     # go faster: this "if" can be skipped by adding directly
                     if new_thing not in place_to_put_new_combos:
                         # print(f"combo {new_thing}")
                         place_to_put_new_combos.add(new_thing)
-                    # divide
+                    # divide ----------------------------
                     if total2 and not total1 % total2:  # decimals are never useful
                         new_total = total1 // total2
                         new_thing = (
                             new_total,
                             (formula_fragment1, "/", formula_fragment2),
                         )
+                        if new_total == target:
+                            print(new_thing)
+                            print(f'puzzle finished in {(time.perf_counter() - start_time)*1000} ms')
+                            exit()
                         # go faster: this "if" can be skipped by adding directly
                         if new_thing not in place_to_put_new_combos:
                             # print(f"combo {new_thing}")
                             place_to_put_new_combos.add(new_thing)
-                    # plus
+                    # plus -------------------------------
                     new_total = total1 + total2
                     new_thing = (
                         new_total,
                         (formula_fragment1, "+", formula_fragment2),
                     )
-                    if new_total == target:
-                        print(new_thing)
-                        exit()
                     new_thing_permutation = (
                         total1 + total2,
                         (formula_fragment2, "+", formula_fragment1),
                     )
                     if new_total == target:
                         print(new_thing)
+                        print(f'puzzle finished in {(time.perf_counter() - start_time)*1000} ms')
                         exit()
                     if (
                         new_thing not in place_to_put_new_combos
@@ -101,7 +106,7 @@ for _ in range(len(initial_numbers) - 1):
                     ):
                         # print(f"combo {new_thing}")
                         place_to_put_new_combos.add(new_thing)
-                    # multiply
+                    # multiply --------------------------
                     new_total = total1 * total2
                     new_thing = (
                         new_total,
@@ -113,6 +118,7 @@ for _ in range(len(initial_numbers) - 1):
                     )
                     if new_total == target:
                         print(new_thing)
+                        print(f'puzzle finished in {(time.perf_counter() - start_time)*1000} ms')
                         exit()
                     if (
                         new_thing not in place_to_put_new_combos
