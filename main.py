@@ -21,6 +21,8 @@ Performance history:
  100 puzzles finished in 385478.2 milliseconds
  - switched data structure to better deduplicate formula fragments with the same totals
  100 puzzles finished in 4953.9 milliseconds
+ - changed from problems having 7 numbers like in Ed's example to 6 numbers like countdown
+ 100 puzzles finished in 2355.3 milliseconds
 
 
 """
@@ -39,9 +41,15 @@ def solve(problem):
     # this will eliminate some reasons for the exact same fragment being generated more than once
     for _ in range(len(initial_numbers) - 1):
         previous_main_data_structure = copy.deepcopy(main_data_structure)
-        for used_numbers1, totals_and_fragments1 in previous_main_data_structure.items():
+        for (
+            used_numbers1,
+            totals_and_fragments1,
+        ) in previous_main_data_structure.items():
             # go faster: the below line does twice as many checks as needed.
-            for used_numbers2, totals_and_fragments2 in previous_main_data_structure.items():
+            for (
+                used_numbers2,
+                totals_and_fragments2,
+            ) in previous_main_data_structure.items():
                 # if the two sets of numbers used overlap then generating a valid formula fragment is impossible,
                 # so we should bail out early
                 if used_numbers1 & used_numbers2:
@@ -55,33 +63,52 @@ def solve(problem):
                         # multiply -----------------------------
                         new_total = total1 * total2
                         if new_total not in new_totals_and_fragments:
-                            new_formula_fragment = formula_fragment1, "*", formula_fragment2
+                            new_formula_fragment = (
+                                formula_fragment1,
+                                "*",
+                                formula_fragment2,
+                            )
                             new_totals_and_fragments[new_total] = new_formula_fragment
                             if new_total == target:
                                 return new_formula_fragment
                         # add ----------------------------------
                         new_total = total1 + total2
                         if new_total not in new_totals_and_fragments:
-                            new_formula_fragment = formula_fragment1, "+", formula_fragment2
+                            new_formula_fragment = (
+                                formula_fragment1,
+                                "+",
+                                formula_fragment2,
+                            )
                             new_totals_and_fragments[new_total] = new_formula_fragment
                             if new_total == target:
                                 return new_formula_fragment
                         # subtract -----------------------------
                         new_total = total1 - total2
                         if new_total not in new_totals_and_fragments:
-                            new_formula_fragment = formula_fragment1, "-", formula_fragment2
+                            new_formula_fragment = (
+                                formula_fragment1,
+                                "-",
+                                formula_fragment2,
+                            )
                             new_totals_and_fragments[new_total] = new_formula_fragment
                             if new_total == target:
                                 return new_formula_fragment
                         # divide -------------------------------
-                        if total2 and not total1 % total2:  # divide by 0 is bad and decimals are never useful
+                        if (
+                            total2 and not total1 % total2
+                        ):  # divide by 0 is bad and decimals are never useful
                             new_total = total1 // total2
                             if new_total not in new_totals_and_fragments:
-                                new_formula_fragment = formula_fragment1, "/", formula_fragment2
-                                new_totals_and_fragments[new_total] = new_formula_fragment
+                                new_formula_fragment = (
+                                    formula_fragment1,
+                                    "/",
+                                    formula_fragment2,
+                                )
+                                new_totals_and_fragments[
+                                    new_total
+                                ] = new_formula_fragment
                                 if new_total == target:
                                     return new_formula_fragment
-    raise ValueError("Problem was impossible, solving failed")
 
 
 def make_main_data_structure(initial_numbers):
