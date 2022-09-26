@@ -34,6 +34,7 @@ Performance history:
 """
 import itertools
 import time
+import math
 
 from test_data import test_data
 
@@ -47,7 +48,45 @@ def solve(problem):
         # I can in theory make things go faster by testing fewer of the left_fragment_lengths for add and multiply
         # as those operations are commutative. After looking at a+b there is not point looking at b+a. However, the
         # approach I initially tried increased runtime by about 7% due to the extra overhead of the extra outer loops.
-        for left_fragment_length in range(fragment_len_to_make - 1, 0, -1):
+
+        for left_fragment_length in range(fragment_len_to_make - 1, math.ceil(fragment_len_to_make / 2) - 1, -1):
+            if left_fragment_length * 2 == fragment_len_to_make:
+                for (used_numbers1, totals_and_fragments1), (used_numbers2, totals_and_fragments2) in itertools.product(
+                    main_data_structure[left_fragment_length].items(), main_data_structure[left_fragment_length].items()
+                ):
+                    # if the two sets of numbers used overlap then generating a valid formula fragment is impossible,
+                    # so we should bail out early
+                    if used_numbers1 & used_numbers2:
+                        continue
+                    # the set of numbers used in the new formula fragment will be the union of the
+                    # sets of numbers used in the two formula fragments used to make it up.
+                    new_used_numbers = used_numbers1 | used_numbers2
+                    # to go faster: main_data_structure[fragment_len_to_make] can be taken out of some loops
+                    new_totals_and_fragments = main_data_structure[fragment_len_to_make][new_used_numbers]
+                    for total1, formula_fragment1 in totals_and_fragments1.items():
+                        for total2, formula_fragment2 in totals_and_fragments2.items():
+                            # multiply -----------------------------
+                            new_total = total1 * total2
+                            if new_total not in new_totals_and_fragments:
+                                new_formula_fragment = (
+                                    formula_fragment1,
+                                    "*",
+                                    formula_fragment2,
+                                )
+                                new_totals_and_fragments[new_total] = new_formula_fragment
+                                if new_total == target:
+                                    return new_formula_fragment
+                            # add ----------------------------------
+                            new_total = total1 + total2
+                            if new_total not in new_totals_and_fragments:
+                                new_formula_fragment = (
+                                    formula_fragment1,
+                                    "+",
+                                    formula_fragment2,
+                                )
+                                new_totals_and_fragments[new_total] = new_formula_fragment
+                                if new_total == target:
+                                    return new_formula_fragment
             # the left and right fragments should in total have the desired length
             right_fragment_length = fragment_len_to_make - left_fragment_length
             for (used_numbers1, totals_and_fragments1) in main_data_structure[left_fragment_length].items():
@@ -84,6 +123,22 @@ def solve(problem):
                                 new_totals_and_fragments[new_total] = new_formula_fragment
                                 if new_total == target:
                                     return new_formula_fragment
+        for left_fragment_length in range(fragment_len_to_make - 1, 0, -1):
+            # the left and right fragments should in total have the desired length
+            right_fragment_length = fragment_len_to_make - left_fragment_length
+            for (used_numbers1, totals_and_fragments1) in main_data_structure[left_fragment_length].items():
+                for (used_numbers2, totals_and_fragments2) in main_data_structure[right_fragment_length].items():
+                    # if the two sets of numbers used overlap then generating a valid formula fragment is impossible,
+                    # so we should bail out early
+                    if used_numbers1 & used_numbers2:
+                        continue
+                    # the set of numbers used in the new formula fragment will be the union of the
+                    # sets of numbers used in the two formula fragments used to make it up.
+                    new_used_numbers = used_numbers1 | used_numbers2
+                    # to go faster: main_data_structure[fragment_len_to_make] can be taken out of some loops
+                    new_totals_and_fragments = main_data_structure[fragment_len_to_make][new_used_numbers]
+                    for total1, formula_fragment1 in totals_and_fragments1.items():
+                        for total2, formula_fragment2 in totals_and_fragments2.items():
                             # subtract -----------------------------
                             new_total = total1 - total2
                             if new_total not in new_totals_and_fragments:
