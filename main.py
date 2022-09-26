@@ -37,7 +37,7 @@ def solve(problem):
     initial_numbers, target = problem
     main_data_structure = make_main_data_structure(initial_numbers)
 
-    # go faster: make the main loop generate all the fragments with len 2 then len 3 then len 4,
+    # to go faster: make the main loop generate all the fragments with len 2 then len 3 then len 4,
     # this will eliminate some reasons for the exact same fragment being generated more than once
     for _ in range(len(initial_numbers) - 1):
         previous_main_data_structure = copy.deepcopy(main_data_structure)
@@ -45,7 +45,7 @@ def solve(problem):
             used_numbers1,
             totals_and_fragments1,
         ) in previous_main_data_structure.items():
-            # go faster: the below line does twice as many checks as needed.
+            # to go faster: the below line does twice as many checks as needed.
             for (
                 used_numbers2,
                 totals_and_fragments2,
@@ -112,21 +112,27 @@ def solve(problem):
 
 
 def make_main_data_structure(initial_numbers):
+    initial_number_len = len(initial_numbers)
     initial_numbers_as_strings = []
     for number in initial_numbers:
         number_as_string = str(number)
-        # to enable duplicate numbers in sets I add a space to end of the string representation of the duplicate number
-        # to make it unique without changing its value
+        # to enable duplicate numbers in sets I add spaces to end of the string representation of the duplicate numbers
+        # to make them unique without changing their value
         while number_as_string in initial_numbers_as_strings:
             number_as_string += " "
         initial_numbers_as_strings.append(number_as_string)
-    assert len(initial_numbers) == len(initial_numbers_as_strings)
+    assert initial_number_len == len(initial_numbers_as_strings)
     all_combinations_of_initial_numbers = list(
         itertools.chain.from_iterable(
             itertools.combinations(initial_numbers_as_strings, r)
-            for r in range(1, len(initial_numbers_as_strings) + 1)
+            for r in range(1, initial_number_len + 1)
         )
     )
+    # to go faster: merge above generator into below loop
+    #main_data_structure = [[]] * (initial_number_len+1)
+    #for combo in all_combinations_of_initial_numbers:
+    #    main_data_structure[len(combo)] = {frozenset(combo): {}}
+
     # I want to initialise the main data structure to have every set of possible numbers that could be used in a formula
     # fragment
     main_data_structure = {
@@ -162,9 +168,3 @@ if __name__ == "__main__":
     print(
         f"{len(test_data)} puzzles finished in {((time.perf_counter() - start_time)*1000):.1f} milliseconds"
     )
-    # the whole data structure
-    # print(*(main_data_structure.items()), sep="\n")
-    # What were the combos found?
-    # print(main_data_structure[frozenset(initial_numbers)])
-    # How many combos were found?
-    # print(len(main_data_structure[frozenset(initial_numbers)]))
