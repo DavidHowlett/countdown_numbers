@@ -10,129 +10,166 @@ The totals are used to avoid recalculating the whole formula each time a new for
 The left_fragment, operator and right fragment are used to reconstruct the whole formula at the end of the calculation.
 They are also used to avoid recreating duplicate entries for ways to generating formulas
 
+Performance history:
+ - First time it ran it took 118 ms to solve Ed's example problem
+ - Added 100 tests
+ 100 puzzles attempted in 64433.9 milliseconds but 11 didn't solve
+ - Added proper handling of duplicate numbers
+ 100 puzzles finished in 178299.0 milliseconds
+ I note that the total solve time is entirely dominated by a very small number of tricky problems
+ - regenerated the problem set in sorted order, and got a really hard one. I want to keep this problem set long term.
+ 100 puzzles finished in 385478.2 milliseconds
+
+
 """
 import copy
 import itertools
 import time
 
-start_time = time.perf_counter()
-target = 673
+from test_data import test_data
 
-initial_numbers = [1, 10, 100, 1000, 10000, 100000, 1000000]
-initial_numbers = [1, 10, 100, 1000]
-initial_numbers = [75, 6, 3, 4, 5, 10]
-all_combinations_of_initial_numbers = list(
-    itertools.chain.from_iterable(
-        itertools.combinations(initial_numbers, r)
-        for r in range(1, len(initial_numbers) + 1)
-    )
-)
 
-# I want to initialise the main data structure to have every set of possible numbers that could be used in a formula
-# fragment
-main_data_structure = {
-    frozenset(combo): set() for combo in all_combinations_of_initial_numbers
-}
-# I then add in all the starting numbers to act as the seed for the recursive filling of the main data structure to come
-# The initial numbers are used to fill up the part of the data structure where the formula would normally be
-for number in initial_numbers:
-    main_data_structure[frozenset([number])].add((number, number))
+def solve(problem):
+    initial_numbers, target = problem
+    main_data_structure = make_main_data_structure(initial_numbers)
 
-# print(*(main_data_structure.items()), sep="\n")
-
-# go faster: make the main loop generate all the fragments with len 2 then len 3 then len 4,
-# this will eliminate some reasons for the exact same fragment being generated more than once
-for _ in range(len(initial_numbers) - 1):
-    previous_main_data_structure = copy.deepcopy(main_data_structure)
-    for used_numbers1, fragment_set1 in previous_main_data_structure.items():
-        # go faster: the below line does twice as many checks as needed.
-        for used_numbers2, fragment_set2 in previous_main_data_structure.items():
-            # if the two sets of numbers used overlap then generating a valid formula fragment is impossible,
-            # so we should bail out early
-            if used_numbers1 & used_numbers2:
-                continue
-            # the set of numbers used in the new formula fragment will be the union of the
-            # sets of numbers used in the two formula fragments used to make it up.
-            new_used_numbers = used_numbers1 | used_numbers2
-            place_to_put_new_combos = main_data_structure[new_used_numbers]
-            for total1, formula_fragment1 in fragment_set1:
-                for total2, formula_fragment2 in fragment_set2:
-                    # go faster: (most important) only add a formula fragment to the main datastructure iff the
-                    # combination of new_used_numbers and new_total is unique. Repeats have no value.
-                    # subtract --------------------------
-                    new_total = total1 - total2
-                    new_thing = (
-                        new_total,
-                        (formula_fragment1, "-", formula_fragment2),
-                    )
-                    if new_total == target:
-                        print(new_thing)
-                        print(f'puzzle finished in {(time.perf_counter() - start_time)*1000} ms')
-                        exit()
-                    # go faster: this "if" can be skipped by adding directly
-                    if new_thing not in place_to_put_new_combos:
-                        # print(f"combo {new_thing}")
-                        place_to_put_new_combos.add(new_thing)
-                    # divide ----------------------------
-                    if total2 and not total1 % total2:  # decimals are never useful
-                        new_total = total1 // total2
+    # go faster: make the main loop generate all the fragments with len 2 then len 3 then len 4,
+    # this will eliminate some reasons for the exact same fragment being generated more than once
+    for _ in range(len(initial_numbers) - 1):
+        previous_main_data_structure = copy.deepcopy(main_data_structure)
+        for used_numbers1, fragment_set1 in previous_main_data_structure.items():
+            # go faster: the below line does twice as many checks as needed.
+            for used_numbers2, fragment_set2 in previous_main_data_structure.items():
+                # if the two sets of numbers used overlap then generating a valid formula fragment is impossible,
+                # so we should bail out early
+                if used_numbers1 & used_numbers2:
+                    continue
+                # the set of numbers used in the new formula fragment will be the union of the
+                # sets of numbers used in the two formula fragments used to make it up.
+                new_used_numbers = used_numbers1 | used_numbers2
+                place_to_put_new_combos = main_data_structure[new_used_numbers]
+                for total1, formula_fragment1 in fragment_set1:
+                    for total2, formula_fragment2 in fragment_set2:
+                        # go faster: (most important) only add a formula fragment to the main datastructure iff the
+                        # combination of new_used_numbers and new_total is unique. Repeats have no value.
+                        # subtract --------------------------
+                        new_total = total1 - total2
                         new_thing = (
                             new_total,
-                            (formula_fragment1, "/", formula_fragment2),
+                            (formula_fragment1, "-", formula_fragment2),
                         )
                         if new_total == target:
-                            print(new_thing)
-                            print(f'puzzle finished in {(time.perf_counter() - start_time)*1000} ms')
-                            exit()
+                            return new_thing
                         # go faster: this "if" can be skipped by adding directly
                         if new_thing not in place_to_put_new_combos:
                             # print(f"combo {new_thing}")
                             place_to_put_new_combos.add(new_thing)
-                    # plus -------------------------------
-                    new_total = total1 + total2
-                    new_thing = (
-                        new_total,
-                        (formula_fragment1, "+", formula_fragment2),
-                    )
-                    new_thing_permutation = (
-                        total1 + total2,
-                        (formula_fragment2, "+", formula_fragment1),
-                    )
-                    if new_total == target:
-                        print(new_thing)
-                        print(f'puzzle finished in {(time.perf_counter() - start_time)*1000} ms')
-                        exit()
-                    if (
-                        new_thing not in place_to_put_new_combos
-                        and new_thing_permutation not in place_to_put_new_combos
-                    ):
-                        # print(f"combo {new_thing}")
-                        place_to_put_new_combos.add(new_thing)
-                    # multiply --------------------------
-                    new_total = total1 * total2
-                    new_thing = (
-                        new_total,
-                        (formula_fragment1, "*", formula_fragment2),
-                    )
-                    new_thing_permutation = (
-                        total1 * total2,
-                        (formula_fragment2, "*", formula_fragment1),
-                    )
-                    if new_total == target:
-                        print(new_thing)
-                        print(f'puzzle finished in {(time.perf_counter() - start_time)*1000} ms')
-                        exit()
-                    if (
-                        new_thing not in place_to_put_new_combos
-                        and new_thing_permutation not in place_to_put_new_combos
-                    ):
-                        # print(f"combo {new_thing}")
-                        place_to_put_new_combos.add(new_thing)
+                        # divide ----------------------------
+                        if total2 and not total1 % total2:  # decimals are never useful
+                            new_total = total1 // total2
+                            new_thing = (
+                                new_total,
+                                (formula_fragment1, "/", formula_fragment2),
+                            )
+                            if new_total == target:
+                                return new_thing
+                            # go faster: this "if" can be skipped by adding directly
+                            if new_thing not in place_to_put_new_combos:
+                                # print(f"combo {new_thing}")
+                                place_to_put_new_combos.add(new_thing)
+                        # plus -------------------------------
+                        new_total = total1 + total2
+                        new_thing = (
+                            new_total,
+                            (formula_fragment1, "+", formula_fragment2),
+                        )
+                        new_thing_permutation = (
+                            total1 + total2,
+                            (formula_fragment2, "+", formula_fragment1),
+                        )
+                        if new_total == target:
+                            return new_thing
+                        if (
+                            new_thing not in place_to_put_new_combos
+                            and new_thing_permutation not in place_to_put_new_combos
+                        ):
+                            # print(f"combo {new_thing}")
+                            place_to_put_new_combos.add(new_thing)
+                        # multiply --------------------------
+                        new_total = total1 * total2
+                        new_thing = (
+                            new_total,
+                            (formula_fragment1, "*", formula_fragment2),
+                        )
+                        new_thing_permutation = (
+                            total1 * total2,
+                            (formula_fragment2, "*", formula_fragment1),
+                        )
+                        if new_total == target:
+                            return new_thing
+                        if (
+                            new_thing not in place_to_put_new_combos
+                            and new_thing_permutation not in place_to_put_new_combos
+                        ):
+                            # print(f"combo {new_thing}")
+                            place_to_put_new_combos.add(new_thing)
+    raise ValueError("Problem was impossible, solving failed")
 
 
-# the whole data structure
-# print(*(main_data_structure.items()), sep="\n")
-# What were the combos found?
-# print(main_data_structure[frozenset(initial_numbers)])
-# How many combos were found?
-# print(len(main_data_structure[frozenset(initial_numbers)]))
+def make_main_data_structure(initial_numbers):
+    initial_numbers_as_strings = []
+    for number in initial_numbers:
+        number_as_string = str(number)
+        # to enable duplicate numbers in sets I add a space to end of the string representation of the duplicate number
+        # to make it unique without changing its value
+        while number_as_string in initial_numbers_as_strings:
+            number_as_string += " "
+        initial_numbers_as_strings.append(number_as_string)
+    assert len(initial_numbers) == len(initial_numbers_as_strings)
+    all_combinations_of_initial_numbers = list(
+        itertools.chain.from_iterable(
+            itertools.combinations(initial_numbers_as_strings, r)
+            for r in range(1, len(initial_numbers_as_strings) + 1)
+        )
+    )
+    # I want to initialise the main data structure to have every set of possible numbers that could be used in a formula
+    # fragment
+    main_data_structure = {
+        frozenset(combo): set() for combo in all_combinations_of_initial_numbers
+    }
+    # I then add in all the starting numbers to act as the seed for the recursive filling of the main data structure
+    # to come. The initial numbers are used to fill up the part of the data structure where the formula
+    # would normally be
+    for number in initial_numbers_as_strings:
+        main_data_structure[frozenset([number])].add((int(number), int(number)))
+    # print(*(main_data_structure.items()), sep="\n")
+    return main_data_structure
+
+
+def solution_to_string(almost_formula):
+    return str(almost_formula[1]).replace("'", "").replace(",", "")
+
+
+if __name__ == "__main__":
+    start_time = time.perf_counter()
+    for _problem in test_data:
+        problem_start_time = time.perf_counter()
+        print(*_problem)
+        solution = solve(_problem)
+        formula = solution_to_string(solution)
+        print(formula)
+        _target = _problem[1]
+        # this is the main sanity check in the program
+        assert eval(formula) == _target
+        print(
+            f"Problem took {((time.perf_counter() - problem_start_time)*1000):.1f} milliseconds"
+        )
+    print(
+        f"{len(test_data)} puzzles finished in {((time.perf_counter() - start_time)*1000):.1f} milliseconds"
+    )
+    # the whole data structure
+    # print(*(main_data_structure.items()), sep="\n")
+    # What were the combos found?
+    # print(main_data_structure[frozenset(initial_numbers)])
+    # How many combos were found?
+    # print(len(main_data_structure[frozenset(initial_numbers)]))
