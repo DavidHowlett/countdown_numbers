@@ -57,6 +57,8 @@ for _ in range(len(initial_numbers) - 1):
             place_to_put_new_combos = main_data_structure[new_used_numbers]
             for total1, formula_fragment1 in fragment_set1:
                 for total2, formula_fragment2 in fragment_set2:
+                    # go faster: (most important) only add a formula fragment to the main datastructure iff the
+                    # combination of new_used_numbers and new_total is unique. Repeats have no value.
                     # subtract --------------------------
                     new_total = total1 - total2
                     new_thing = (
