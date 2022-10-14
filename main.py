@@ -64,7 +64,7 @@ def solve(problem):
                         for total2, formula_fragment2 in totals_and_fragments2.items():
                             # multiply -----------------------------
                             new_total = total1 * total2
-                            if new_total not in new_totals_and_fragments:
+                            if new_total not in new_totals_and_fragments or new_total == target:
                                 new_formula_fragment = (
                                     formula_fragment1,
                                     "*",
@@ -72,10 +72,10 @@ def solve(problem):
                                 )
                                 new_totals_and_fragments[new_total] = new_formula_fragment
                                 if new_total == target:
-                                    return new_formula_fragment
+                                    yield new_formula_fragment
                             # add ----------------------------------
                             new_total = total1 + total2
-                            if new_total not in new_totals_and_fragments:
+                            if new_total not in new_totals_and_fragments or new_total == target:
                                 new_formula_fragment = (
                                     formula_fragment1,
                                     "+",
@@ -83,10 +83,10 @@ def solve(problem):
                                 )
                                 new_totals_and_fragments[new_total] = new_formula_fragment
                                 if new_total == target:
-                                    return new_formula_fragment
+                                    yield new_formula_fragment
                             # subtract -----------------------------
                             new_total = total1 - total2
-                            if new_total not in new_totals_and_fragments:
+                            if new_total not in new_totals_and_fragments or new_total == target:
                                 new_formula_fragment = (
                                     formula_fragment1,
                                     "-",
@@ -94,11 +94,11 @@ def solve(problem):
                                 )
                                 new_totals_and_fragments[new_total] = new_formula_fragment
                                 if new_total == target:
-                                    return new_formula_fragment
+                                    yield new_formula_fragment
                             # divide -------------------------------
                             if total2 and not total1 % total2:  # divide by 0 is bad and decimals are never useful
                                 new_total = total1 // total2
-                                if new_total not in new_totals_and_fragments:
+                                if new_total not in new_totals_and_fragments or new_total == target:
                                     new_formula_fragment = (
                                         formula_fragment1,
                                         "/",
@@ -106,7 +106,8 @@ def solve(problem):
                                     )
                                     new_totals_and_fragments[new_total] = new_formula_fragment
                                     if new_total == target:
-                                        return new_formula_fragment
+                                        yield new_formula_fragment
+    print('foo')
 
 
 def make_main_data_structure(initial_numbers):
@@ -145,15 +146,7 @@ def solution_to_string(almost_formula):
 
 
 if __name__ == "__main__":
-    start_time = time.perf_counter()
-    for _problem in test_data:
-        problem_start_time = time.perf_counter()
-        print(*_problem)
-        solution = solve(_problem)
-        formula = solution_to_string(solution)
-        print(formula)
-        _target = _problem[1]
-        # this is the main sanity check in the program
-        assert eval(formula) == _target
-        print(f"Problem took {((time.perf_counter() - problem_start_time)*1000):.2f} milliseconds")
-    print(f"{len(test_data)} puzzles finished in {((time.perf_counter() - start_time)*1000):.1f} milliseconds")
+    problem_start_time = time.perf_counter()
+    for solution in solve(([25,50,75,100,3,6],952)):
+        print(solution_to_string(solution))
+    print(f"Problem took {((time.perf_counter() - problem_start_time)*1000):.2f} milliseconds")
