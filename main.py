@@ -50,8 +50,8 @@ def solve(problem):
         for left_fragment_length in range(fragment_len_to_make - 1, 0, -1):
             # the left and right fragments should in total have the desired length
             right_fragment_length = fragment_len_to_make - left_fragment_length
-            for (used_numbers1, totals_and_fragments1) in main_data_structure[left_fragment_length].items():
-                for (used_numbers2, totals_and_fragments2) in main_data_structure[right_fragment_length].items():
+            for used_numbers1, totals_and_fragments1 in main_data_structure[left_fragment_length].items():
+                for used_numbers2, totals_and_fragments2 in main_data_structure[right_fragment_length].items():
                     # if the two sets of numbers used overlap then generating a valid formula fragment is impossible,
                     # so we should bail out early
                     if used_numbers1 & used_numbers2:
@@ -67,7 +67,7 @@ def solve(problem):
                             if new_total not in new_totals_and_fragments:
                                 new_formula_fragment = (
                                     formula_fragment1,
-                                    "*",
+                                    '*',
                                     formula_fragment2,
                                 )
                                 new_totals_and_fragments[new_total] = new_formula_fragment
@@ -78,7 +78,7 @@ def solve(problem):
                             if new_total not in new_totals_and_fragments:
                                 new_formula_fragment = (
                                     formula_fragment1,
-                                    "+",
+                                    '+',
                                     formula_fragment2,
                                 )
                                 new_totals_and_fragments[new_total] = new_formula_fragment
@@ -89,7 +89,7 @@ def solve(problem):
                             if new_total not in new_totals_and_fragments:
                                 new_formula_fragment = (
                                     formula_fragment1,
-                                    "-",
+                                    '-',
                                     formula_fragment2,
                                 )
                                 new_totals_and_fragments[new_total] = new_formula_fragment
@@ -101,7 +101,7 @@ def solve(problem):
                                 if new_total not in new_totals_and_fragments:
                                     new_formula_fragment = (
                                         formula_fragment1,
-                                        "/",
+                                        '/',
                                         formula_fragment2,
                                     )
                                     new_totals_and_fragments[new_total] = new_formula_fragment
@@ -117,7 +117,7 @@ def make_main_data_structure(initial_numbers):
         # to enable duplicate numbers in sets I add spaces to end of the string representation of the duplicate numbers
         # to make them unique without changing their value
         while number_as_string in initial_numbers_as_strings:
-            number_as_string += " "
+            number_as_string += ' '
         initial_numbers_as_strings.append(number_as_string)
     assert initial_number_len == len(initial_numbers_as_strings)
     all_combinations_of_initial_numbers = itertools.chain.from_iterable(
@@ -141,10 +141,10 @@ def make_main_data_structure(initial_numbers):
 
 
 def solution_to_string(almost_formula):
-    return str(almost_formula).replace("'", "").replace(",", "")
+    return str(almost_formula).replace("'", '').replace(',', '')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     start_time = time.perf_counter()
     for _problem in test_data:
         problem_start_time = time.perf_counter()
@@ -155,5 +155,5 @@ if __name__ == "__main__":
         _target = _problem[1]
         # this is the main sanity check in the program
         assert eval(formula) == _target
-        print(f"Problem took {((time.perf_counter() - problem_start_time)*1000):.2f} milliseconds")
-    print(f"{len(test_data)} puzzles finished in {((time.perf_counter() - start_time)*1000):.1f} milliseconds")
+        print(f'Problem took {((time.perf_counter() - problem_start_time)*1000):.2f} milliseconds')
+    print(f'{len(test_data)} puzzles finished in {((time.perf_counter() - start_time)*1000):.1f} milliseconds')

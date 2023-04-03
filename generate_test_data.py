@@ -1,16 +1,18 @@
 """
-This generates the test data. Please don't re-run this without good cause.
+This generates the test data. Please don't re-run this without good cause as it makes performance comparisons over
+time harder.
 """
 
 import random
 import time
+from typing import List, Tuple
 
 import main
 
 top_row = [25, 50, 75, 100]
 bottom_row = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] * 2
 all_numbers = top_row + bottom_row
-problems = []
+problems: List[Tuple[Tuple[List[int], int], float]] = []
 
 
 # In the below generator I limit myself to length 6 and check if each problem is solvable.
@@ -28,5 +30,5 @@ while len(problems) < 100:
 
 # I put the easy problems earlier in the problem set so that debugging is done with trivial problems
 problems.sort(key=lambda x: x[1])
-problems = [x[0] for x in problems]
-open("test_data.py", "w").write("test_data = " + str(problems))
+with open('test_data.py', 'w', encoding='UTF-8') as file:
+    file.write('test_data = ' + str([x[0] for x in problems]))
