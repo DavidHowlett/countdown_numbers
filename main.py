@@ -1,6 +1,6 @@
 """
-I attempt to combine 6 numbers and the 4 basic arithmatic operations to make a random three-digit number as fast as
-possible.
+I attempt to combine 6 numbers and the 4 basic arithmatic operations to make a randomly selected three-digit number as
+fast as possible.
 
 The main data structure is a collection of formula fragments. Each formula fragment must record:
     - a frozenset of the numbers used
@@ -9,13 +9,14 @@ The main data structure is a collection of formula fragments. Each formula fragm
     integer for the base numbers.
 The frozenset is used to avoid generating formulas with duplicate numbers in.
 The totals are used to avoid recalculating the whole formula each time a new formula is generated.
-The left_fragment, operator and right fragment are used to reconstruct the whole formula at the end of the calculation.
+The tuple of (left_fragment, operator, right fragment) is used to reconstruct the whole formula at the end of the
+calculation.
 
 In the final code below the whole program revolves around a complex, nested datastructure that allows the skipping of
 most of the calculation without loss of any possible solutions.
 
 Performance history:
- - First time it ran it took 118 ms to solve Ed's example problem
+ - First time it ran it took 118 ms to solve a single example problem from my colleague Ed Spyer
  - Added 100 tests
  100 puzzles attempted in 64433.9 milliseconds but 11 didn't solve
  - Added proper handling of duplicate numbers
@@ -27,26 +28,33 @@ Performance history:
  100 puzzles finished in 4953.9 milliseconds
  - changed from problems having 7 numbers like in Ed's example to 6 numbers like in original countdown
  100 puzzles finished in 2355.3 milliseconds
- - I generated the formula fragments in size order
+ - Generated the formula fragments in size order
  100 puzzles finished in 406.4 milliseconds
-
-
+ - Upgraded to an M2 pro CPU (speedup unrelated to algorithmic improvements)
+ 100 puzzles finished in 176.6 milliseconds
 """
 import itertools
 import time
+from typing import Any, Dict, FrozenSet, List, Tuple, Union
 
 from test_data import test_data
 
 
-def solve(problem):
+def solve(problem: Tuple[List[int], int]):
     initial_numbers, target = problem
-    main_data_structure = make_main_data_structure(initial_numbers)
+    # I define a FormulaFragment to be a Union[int, Tuple[FormulaFragment, str, FormulaFragment]
+    # Unfortunately I have to write this in a comment rather than in code as mypy does not support recursive types.
+    # The "Any" in the below data structure is intended to be a FormulaFragment
+    main_data_structure: List[Dict[FrozenSet[str], Dict[int, Union[int, Any]]]] = make_main_data_structure(
+        initial_numbers
+    )
     for fragment_len_to_make in range(2, len(initial_numbers) + 1):
         # I choose to start with the big fragments on the left and the small fragments on the right.
         # This often makes the solutions found easy to read.
         # I can in theory make things go faster by testing fewer of the left_fragment_lengths for add and multiply
-        # as those operations are commutative. After looking at a+b there is not point looking at b+a. However, the
-        # approach I initially tried increased runtime by about 7% due to the extra overhead of the extra outer loops.
+        # as those operations are commutative. Put another way, after looking at a+b there is not point looking at b+a.
+        # However, the approach I initially tried for this increased run time by about 7% due to the extra overhead of
+        # the extra outer loops.
         for left_fragment_length in range(fragment_len_to_make - 1, 0, -1):
             # the left and right fragments should in total have the desired length
             right_fragment_length = fragment_len_to_make - left_fragment_length
@@ -109,7 +117,7 @@ def solve(problem):
                                         return new_formula_fragment
 
 
-def make_main_data_structure(initial_numbers):
+def make_main_data_structure(initial_numbers: List[int]) -> List[Dict[FrozenSet[str], Dict[int, int]]]:
     initial_number_len = len(initial_numbers)
     initial_numbers_as_strings = []
     for number in initial_numbers:
@@ -126,7 +134,7 @@ def make_main_data_structure(initial_numbers):
 
     # I want to initialise the main data structure to have every set of possible numbers that could be used in a formula
     # fragment and I want to group them by length
-    main_data_structure = [{} for _ in range(initial_number_len + 1)]
+    main_data_structure: List[Dict[FrozenSet[str], Dict[int, int]]] = [{} for _ in range(initial_number_len + 1)]
     for combo in all_combinations_of_initial_numbers:
         main_data_structure[len(combo)][frozenset(combo)] = {}
 
@@ -134,8 +142,8 @@ def make_main_data_structure(initial_numbers):
     # only use themselves for representation. These three properties mean they appear in the below formula three times.
     # More specifically the initial numbers are used to fill up the parts of the data structure where the formula
     # fragment and the total would normally be
-    for number in initial_numbers_as_strings:
-        main_data_structure[1][frozenset([number])][int(number)] = int(number)
+    for str_number in initial_numbers_as_strings:
+        main_data_structure[1][frozenset([str_number])][int(str_number)] = int(str_number)
     # print(*(main_data_structure.items()), sep="\n")
     return main_data_structure
 
